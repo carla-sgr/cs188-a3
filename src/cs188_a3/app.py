@@ -22,10 +22,16 @@ def close_db(error: BaseException | None = None) -> None:
 
 def init_api(app: Flask) -> None:
     """Connect API resources to their URLs."""
-    from cs188_a3.resources import Register
+    from cs188_a3.resources import Register, BookList, BookDetail
 
     api = Api(app)
     api.add_resource(Register, "/register")
+    api.add_resource(BookList, "/books")
+    api.add_resource(
+        BookDetail,
+        "/books/<int(signed=True):book_id>",
+        endpoint="book_detail",
+    )
 
 
 def create_app(db_path: str = "reading_list.db") -> Flask:

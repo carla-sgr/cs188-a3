@@ -1,8 +1,9 @@
-from flask import request
+from flask import g, request, url_for
 from flask_restful import Resource
 
 from cs188_a3 import services
 from cs188_a3.app import get_db
+from cs188_a3.auth import auth_required
 
 
 class Register(Resource):
@@ -41,3 +42,74 @@ class Register(Resource):
             "message": "User registered successfully",
             "id": user_id,
         }, 201
+
+
+class BookList(Resource):
+    """Handle listing and creating book records."""
+
+    def get(self) -> tuple[list[dict] | dict, int]:
+        """List books, optionally filtered by reading status."""
+        status = request.args.get("status")
+
+        try:
+            books = services.list_books(get_db(), status)
+        except services.ValidationError as error:
+            return {"message": str(error)}, 400
+
+        return books, 200
+
+    @auth_required
+    def post(self) -> tuple:
+        """Create a book owned by the authenticated user."""
+        data = request.get_json(silent=True)
+
+        try:
+            book = services.create_book(get_db(), g.user_id, data)
+        except services.ValidationError as error:
+            return {"message": str(error)}, 400
+
+        location = url_for("book_detail", book_id=book["id"])
+        return book, 201, {"Location": location}
+
+
+class BookDetail(Resource):
+    """Handle requests for an individual book."""
+
+    def get(self, book_id: int) -> tuple[dict, int]:
+        """Return a book, or a 404 response if it does not exist."""
+        try:
+            book = services.get_book(get_db(), book_id)
+        except services.NotFound as error:
+            return {"message": str(error)}, 404
+
+        return book, 200
+
+    @auth_required
+    def patch(self, book_id: int) -> tuple[dict, int]:
+        """Update supplied fields on a book owned by the caller."""
+        data = request.get_json(silent=True)
+
+        try:
+            book = services.update_book(
+                get_db(), g.user_id, book_id, data
+            )
+        except services.NotFound as error:
+            return {"message": str(error)}, 404
+        except services.Forbidden as error:
+            return {"message": str(error)}, 403
+        except services.ValidationError as error:
+            return {"message": str(error)}, 400
+
+        return book, 200
+
+    @auth_required
+    def delete(self, book_id: int) -> tuple[dict, int]:
+        """Delete a book owned by the authenticated caller."""
+        try:
+            services.delete_book(get_db(), g.user_id, book_id)
+        except services.NotFound as error:
+            return {"message": str(error)}, 404
+        except services.Forbidden as error:
+            return {"message": str(error)}, 403
+
+        return {"message": "Book deleted successfully"}, 200
