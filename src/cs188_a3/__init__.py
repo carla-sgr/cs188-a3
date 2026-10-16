@@ -1,2 +1,6 @@
+from cs188_a3.app import run_app
+
+
 def main() -> None:
-    print("Hello from cs188-a3!")
+    """Start the reading-list API."""
+    run_app()
