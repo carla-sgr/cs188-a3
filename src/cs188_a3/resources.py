@@ -4,6 +4,7 @@ from flask_restful import Resource
 from cs188_a3 import services
 from cs188_a3.app import get_db
 from cs188_a3.auth import auth_required
+from cs188_a3 import catalog
 
 
 class Register(Resource):
@@ -113,3 +114,37 @@ class BookDetail(Resource):
             return {"message": str(error)}, 403
 
         return {"message": "Book deleted successfully"}, 200
+
+
+class Catalog(Resource):
+    """Search Open Library and import books into the reading list."""
+
+    def get(self) -> tuple:
+        """Search the external catalog by title."""
+        try:
+            books = catalog.search_books(request.args.get("title"))
+        except services.ValidationError as error:
+            return {"message": str(error)}, 400
+        except catalog.ExternalAPIError as error:
+            return {"message": str(error)}, 502
+
+        return books, 200
+
+    @auth_required
+    def post(self) -> tuple:
+        """Import a book by ISBN for the authenticated user."""
+        try:
+            book = services.import_catalog_book(
+                get_db(),
+                g.user_id,
+                request.get_json(silent=True),
+            )
+        except services.ValidationError as error:
+            return {"message": str(error)}, 400
+        except services.NotFound as error:
+            return {"message": str(error)}, 404
+        except catalog.ExternalAPIError as error:
+            return {"message": str(error)}, 502
+
+        location = url_for("book_detail", book_id=book["id"])
+        return book, 201, {"Location": location}

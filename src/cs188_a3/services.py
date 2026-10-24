@@ -179,3 +179,43 @@ def list_books(
             )
 
     return database.list_books(status)
+
+def import_catalog_book(
+    database: Database, user_id: int, data: object
+) -> dict:
+    """Import an Open Library book into the caller's reading list."""
+    # Imported here because catalog uses the service error classes.
+    from cs188_a3.catalog import lookup_book
+
+    if not isinstance(data, dict):
+        raise ValidationError("Request body must be a JSON object")
+
+    allowed_fields = {"isbn", "pages", "status", "rating", "notes"}
+    if set(data) - allowed_fields:
+        raise ValidationError("Request contains unknown or server-controlled fields")
+
+    # Validate user-supplied book fields before contacting Open Library.
+    options = {
+        field: value
+        for field, value in data.items()
+        if field != "isbn"
+    }
+    if options:
+        options = validate_book_data(options, partial=True)
+
+    details = lookup_book(data.get("isbn"))
+
+    book_data = {
+        "title": details["title"],
+        "author": details["author"],
+        "pages": details["pages"],
+        "status": "want_to_read",
+    }
+    book_data.update(options)
+
+    if book_data["pages"] is None:
+        raise ValidationError(
+            "Open Library has no page count; include pages in your request"
+        )
+
+    return create_book(database, user_id, book_data)
