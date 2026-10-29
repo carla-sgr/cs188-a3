@@ -1,3 +1,4 @@
+# Test code developed with ChatGPT assistance.
 from flask.testing import FlaskClient
 import pytest
 

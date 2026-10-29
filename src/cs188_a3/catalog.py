@@ -7,7 +7,6 @@ from cs188_a3.services import NotFound, ValidationError
 # Open Library documentation:
 # https://openlibrary.org/dev/docs/api/search
 # https://openlibrary.org/dev/docs/api/books
-# Implementation developed with ChatGPT assistance.
 OPEN_LIBRARY_BASE_URL = "https://openlibrary.org"
 REQUEST_TIMEOUT = 30
 HEADERS = {

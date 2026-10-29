@@ -1,3 +1,4 @@
+# Test code developed with ChatGPT assistance.
 from collections.abc import Iterator
 
 import pytest

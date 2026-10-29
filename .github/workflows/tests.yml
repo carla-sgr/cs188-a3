@@ -1,3 +1,4 @@
+# Adapted from the CS 188 API activity's GitHub Actions workflow.
 name: Run Python Tests
 
 on:
